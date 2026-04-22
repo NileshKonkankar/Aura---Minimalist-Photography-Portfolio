@@ -3,6 +3,7 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import { Instagram, Twitter, Mail, Camera, X, Menu } from 'lucide-react';
 import { Photo } from './types';
 import BackgroundEffects from './components/BackgroundEffects';
+import { ResponsiveImage } from './components/ResponsiveImage';
 
 const PORTFOLIO: Photo[] = [
   {
@@ -118,13 +119,30 @@ const App: React.FC = () => {
   const { scrollY } = useScroll();
   const heroY = useTransform(scrollY, [0, 1000], [0, 300]);
   const heroOpacity = useTransform(scrollY, [0, 500], [1, 0]);
+  
+  // Subtle text parallax transforms
+  const textY1 = useTransform(scrollY, [0, 800], [0, -150]); // Fastest
+  const textY2 = useTransform(scrollY, [0, 800], [0, -100]); // Medium
+  const textY3 = useTransform(scrollY, [0, 800], [0, -50]);  // Slowest
 
   const [activeCategory, setActiveCategory] = useState('All');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [visibleCount, setVisibleCount] = useState(6);
+  const [formState, setFormState] = useState<'idle' | 'submitting' | 'success'>('idle');
   const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  const handleContactSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormState('submitting');
+    // Simulate network request
+    setTimeout(() => {
+      setFormState('success');
+      // Reset form after some time
+      setTimeout(() => setFormState('idle'), 5000);
+    }, 1500);
+  };
 
   useEffect(() => {
     setVisibleCount(6);
@@ -229,68 +247,85 @@ const App: React.FC = () => {
 
       {/* Hero Section */}
       <header className="relative h-screen flex items-center justify-center overflow-hidden bg-black">
-        <motion.div style={{ y: heroY, opacity: heroOpacity }} className="absolute inset-0 z-0">
-          <motion.img 
-            initial={{ scale: 1.2, filter: 'blur(10px)' }}
-            animate={{ scale: 1, filter: 'blur(0px)' }}
-            transition={{ duration: 2, ease: "easeOut" }}
-            src="https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?q=80&w=2071&auto=format&fit=crop" 
-            alt="Hero Background" 
-            className="w-full h-full object-cover opacity-80"
-            referrerPolicy="no-referrer"
-          />
+        <motion.div style={{ y: heroY, opacity: heroOpacity }} className="absolute inset-0 z-0 overflow-hidden">
+          <motion.div 
+            initial={{ scale: 1, filter: 'blur(10px)' }}
+            animate={{ scale: 1.08, filter: 'blur(0px)' }}
+            transition={{ duration: 3, ease: [0.16, 1, 0.3, 1] }}
+            className="w-full h-full"
+          >
+            <ResponsiveImage 
+              src="https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?q=80&w=2071&auto=format&fit=crop" 
+              alt="Hero Background" 
+              className="w-full h-full object-cover opacity-80"
+              priority={true}
+              referrerPolicy="no-referrer"
+            />
+          </motion.div>
           <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-[#fafafa]"></div>
         </motion.div>
         
         <div className="relative z-10 text-center text-white px-4 w-full max-w-5xl">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={{
-              hidden: { opacity: 0 },
-              visible: {
-                opacity: 1,
-                transition: { staggerChildren: 0.15, delayChildren: 0.4 }
-              }
-            }}
-            className="font-serif text-5xl md:text-7xl lg:text-8xl mb-6 leading-tight drop-shadow-lg"
-          >
-            <motion.span 
-              className="block" 
-              variants={{ hidden: { opacity: 0, y: 40, filter: 'blur(10px)' }, visible: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 1, ease: "easeOut" } } }}
+          <motion.div style={{ y: textY1 }}>
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: {
+                  opacity: 1,
+                  transition: { staggerChildren: 0.2, delayChildren: 0.6 }
+                }
+              }}
+              className="font-serif text-5xl md:text-7xl lg:text-8xl mb-6 leading-tight drop-shadow-lg"
             >
-              Capturing Light
-            </motion.span>
-            <motion.span 
-              className="block italic text-white/90" 
-              variants={{ hidden: { opacity: 0, y: 40, filter: 'blur(10px)' }, visible: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 1, ease: "easeOut" } } }}
-            >
-              & Fleeting Moments
-            </motion.span>
+              <motion.span 
+                className="block" 
+                variants={{ 
+                  hidden: { opacity: 0, y: 50, filter: 'blur(12px)', scale: 0.95 }, 
+                  visible: { opacity: 1, y: 0, filter: 'blur(0px)', scale: 1, transition: { duration: 1.2, ease: [0.16, 1, 0.3, 1] } } 
+                }}
+              >
+                Capturing Light
+              </motion.span>
+              <motion.span 
+                className="block italic text-white/90" 
+                variants={{ 
+                  hidden: { opacity: 0, y: 50, filter: 'blur(12px)', scale: 0.95 }, 
+                  visible: { opacity: 1, y: 0, filter: 'blur(0px)', scale: 1, transition: { duration: 1.2, ease: [0.16, 1, 0.3, 1] } } 
+                }}
+              >
+                & Fleeting Moments
+              </motion.span>
+            </motion.div>
           </motion.div>
           
-          <motion.p 
-            initial={{ opacity: 0, filter: 'blur(10px)' }}
-            animate={{ opacity: 1, filter: 'blur(0px)' }}
-            transition={{ duration: 1.2, delay: 1.2 }}
-            className="text-lg md:text-xl font-light tracking-wide max-w-2xl mx-auto text-white/90 drop-shadow-md"
-          >
-            Professional photography focused on architecture, nature, and the human experience.
-          </motion.p>
-          
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 1.6 }}
-            className="mt-16"
-          >
-            <button 
-              onClick={() => scrollToSection('portfolio')}
-              className="group relative overflow-hidden border border-white/50 px-10 py-4 text-xs uppercase tracking-widest transition-colors duration-300 cursor-pointer backdrop-blur-sm"
+          <motion.div style={{ y: textY2 }}>
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 1.2, ease: [0.16, 1, 0.3, 1] }}
+              className="text-lg md:text-xl font-light tracking-wide max-w-2xl mx-auto text-white/90 drop-shadow-md"
             >
-              <span className="relative z-10 group-hover:text-black transition-colors duration-300">View Portfolio</span>
-              <div className="absolute inset-0 bg-white transform scale-y-0 origin-bottom group-hover:scale-y-100 transition-transform duration-300 ease-out z-0"></div>
-            </button>
+              Professional photography focused on architecture, nature, and the human experience.
+            </motion.p>
+          </motion.div>
+          
+          <motion.div style={{ y: textY3 }}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 1.6 }}
+              className="mt-16"
+            >
+              <button 
+                onClick={() => scrollToSection('portfolio')}
+                className="group relative overflow-hidden border border-white/50 px-10 py-4 text-xs uppercase tracking-widest transition-colors duration-300 cursor-pointer backdrop-blur-sm"
+              >
+                <span className="relative z-10 group-hover:text-black transition-colors duration-300">View Portfolio</span>
+                <div className="absolute inset-0 bg-white transform scale-y-0 origin-bottom group-hover:scale-y-100 transition-transform duration-300 ease-out z-0"></div>
+              </button>
+            </motion.div>
           </motion.div>
         </div>
       </header>
@@ -324,15 +359,19 @@ const App: React.FC = () => {
           layout
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
         >
-          <AnimatePresence>
-            {filteredPhotos.slice(0, visibleCount).map((photo) => (
+          <AnimatePresence mode="popLayout">
+            {filteredPhotos.slice(0, visibleCount).map((photo, index) => (
               <motion.div
                 layout
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "0px 0px -50px 0px" }}
-                exit={{ opacity: 0, y: 20 }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
+                initial={{ opacity: 0, y: 50, scale: 0.95 }}
+                whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                viewport={{ once: true, margin: "0px 0px -100px 0px" }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ 
+                  duration: 0.8, 
+                  ease: [0.16, 1, 0.3, 1],
+                  delay: (index % 3) * 0.1 // Slight stagger for items entering simultaneously
+                }}
                 key={photo.id}
                 className={`relative group overflow-hidden cursor-pointer bg-gray-100 ${
                   photo.aspectRatio === 'portrait' ? 'aspect-[3/4]' : 
@@ -340,16 +379,30 @@ const App: React.FC = () => {
                 }`}
                 onClick={() => setSelectedPhoto(photo)}
               >
-                <img 
-                  src={photo.url} 
-                  alt={photo.title} 
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  referrerPolicy="no-referrer"
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-500 flex flex-col justify-end p-6 opacity-0 group-hover:opacity-100">
-                  <span className="text-white/80 text-xs tracking-widest uppercase mb-2">{photo.category}</span>
-                  <h3 className="text-white font-serif text-2xl">{photo.title}</h3>
-                </div>
+                <motion.div 
+                  className="w-full h-full relative"
+                  whileHover={{ scale: 1.03 }}
+                  transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <ResponsiveImage 
+                    src={photo.url} 
+                    alt={photo.title} 
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-500 flex flex-col justify-end p-6">
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      whileHover={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, ease: "easeOut" }}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    >
+                      <span className="text-white/90 text-xs tracking-widest uppercase mb-2 block">{photo.category}</span>
+                      <h3 className="text-white font-serif text-2xl drop-shadow-md">{photo.title}</h3>
+                    </motion.div>
+                  </div>
+                </motion.div>
               </motion.div>
             ))}
           </AnimatePresence>
@@ -368,9 +421,10 @@ const App: React.FC = () => {
         <div className="max-w-7xl mx-auto px-6 md:px-12">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div className="relative aspect-[4/5] w-full max-w-md mx-auto lg:mx-0">
-              <img 
+              <ResponsiveImage 
                 src="https://images.unsplash.com/photo-1554046920-90dcac824100?q=80&w=1974&auto=format&fit=crop" 
                 alt="Alex Morgan" 
+                sizes="(max-width: 1024px) 100vw, 50vw"
                 className="w-full h-full object-cover grayscale"
                 referrerPolicy="no-referrer"
               />
@@ -418,16 +472,75 @@ const App: React.FC = () => {
         <div className="max-w-3xl mx-auto">
           <Camera size={48} strokeWidth={1} className="mx-auto mb-8 opacity-50" />
           <h2 className="font-serif text-4xl md:text-6xl mb-6">Let's Create Together</h2>
-          <p className="text-gray-400 mb-12 text-lg font-light">
-            Available for freelance opportunities and creative collaborations worldwide.
+          <p className="text-gray-400 mb-12 text-lg font-light max-w-xl mx-auto">
+            Available for freelance opportunities and creative collaborations worldwide. Drop me a message below.
           </p>
-          <a 
-            href="mailto:hello@example.com" 
-            className="inline-flex items-center gap-3 bg-white text-black px-8 py-4 text-sm tracking-widest uppercase hover:bg-gray-200 transition-colors cursor-pointer"
-          >
-            <Mail size={18} />
-            Get in Touch
-          </a>
+
+          <div className="min-h-[300px] flex flex-col justify-center">
+            {formState === 'success' ? (
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }} 
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white/5 border border-white/10 p-12 text-center text-white"
+              >
+                <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Mail size={24} className="text-white" />
+                </div>
+                <h3 className="text-2xl font-serif mb-2">Message Received</h3>
+                <p className="text-gray-400 font-light text-sm">Thank you for reaching out. I'll get back to you shortly.</p>
+              </motion.div>
+            ) : (
+              <motion.form 
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                onSubmit={handleContactSubmit} 
+                className="text-left space-y-8 w-full max-w-xl mx-auto"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="relative group">
+                    <label className="block text-xs uppercase tracking-widest text-gray-500 mb-2 group-focus-within:text-white transition-colors">Name</label>
+                    <input 
+                      required 
+                      type="text" 
+                      className="w-full bg-transparent border-b border-gray-800 py-3 text-white focus:outline-none focus:border-white transition-colors font-light" 
+                      placeholder="Jane Doe"
+                    />
+                  </div>
+                  <div className="relative group">
+                    <label className="block text-xs uppercase tracking-widest text-gray-500 mb-2 group-focus-within:text-white transition-colors">Email</label>
+                    <input 
+                      required 
+                      type="email" 
+                      className="w-full bg-transparent border-b border-gray-800 py-3 text-white focus:outline-none focus:border-white transition-colors font-light" 
+                      placeholder="jane@example.com"
+                    />
+                  </div>
+                </div>
+                <div className="relative group">
+                  <label className="block text-xs uppercase tracking-widest text-gray-500 mb-2 group-focus-within:text-white transition-colors">Message</label>
+                  <textarea 
+                    required 
+                    rows={4} 
+                    className="w-full bg-transparent border-b border-gray-800 py-3 text-white focus:outline-none focus:border-white transition-colors resize-none font-light"
+                    placeholder="Tell me about your project..."
+                  ></textarea>
+                </div>
+                
+                <button 
+                  disabled={formState === 'submitting'} 
+                  type="submit" 
+                  className="w-full bg-white text-black py-5 text-xs tracking-widest uppercase hover:bg-gray-200 transition-colors cursor-pointer flex justify-center items-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {formState === 'submitting' ? (
+                    <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <>Send Message</>
+                  )}
+                </button>
+              </motion.form>
+            )}
+          </div>
           
           <div className="mt-24 flex justify-center gap-8">
             <a href="#" className="text-gray-500 hover:text-white transition-colors">
@@ -450,41 +563,44 @@ const App: React.FC = () => {
         {selectedPhoto && (
           <motion.div 
             initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-            animate={{ opacity: 1, backdropFilter: 'blur(12px)' }}
+            animate={{ opacity: 1, backdropFilter: 'blur(20px)' }}
             exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-            transition={{ duration: 0.4 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4 md:p-12 cursor-pointer"
             onClick={() => setSelectedPhoto(null)}
           >
             <motion.button 
-              initial={{ opacity: 0, rotate: -90 }}
-              animate={{ opacity: 1, rotate: 0 }}
-              exit={{ opacity: 0, rotate: 90 }}
-              transition={{ duration: 0.4, delay: 0.1 }}
-              className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors cursor-pointer z-10"
+              initial={{ opacity: 0, scale: 0.5, rotate: -90 }}
+              animate={{ opacity: 1, scale: 1, rotate: 0 }}
+              exit={{ opacity: 0, scale: 0.5, rotate: 90 }}
+              transition={{ duration: 0.4, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="absolute top-6 right-6 md:top-10 md:right-10 text-white/50 hover:text-white transition-colors cursor-pointer z-10 p-2"
               onClick={() => setSelectedPhoto(null)}
             >
               <X size={32} />
             </motion.button>
             
             <motion.div 
-              initial={{ scale: 0.8, opacity: 0, y: 40, filter: 'blur(10px)' }}
+              initial={{ scale: 0.9, opacity: 0, y: 30, filter: 'blur(10px)' }}
               animate={{ scale: 1, opacity: 1, y: 0, filter: 'blur(0px)' }}
-              exit={{ scale: 0.8, opacity: 0, y: -40, filter: 'blur(10px)' }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="relative max-w-6xl max-h-full w-full h-full flex flex-col items-center justify-center cursor-auto"
+              exit={{ scale: 0.95, opacity: 0, y: -20, filter: 'blur(5px)' }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+              className="relative max-w-7xl max-h-full w-full h-full flex flex-col items-center justify-center cursor-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <img 
+              <ResponsiveImage 
                 src={selectedPhoto.url} 
                 alt={selectedPhoto.title} 
+                priority={true}
+                sizes="100vw"
                 className="max-w-full max-h-[85vh] object-contain shadow-2xl"
                 referrerPolicy="no-referrer"
               />
               <motion.div 
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 0.5 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ delay: 0.4, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                 className="mt-6 text-center"
               >
                 <h3 className="text-white font-serif text-3xl mb-2">{selectedPhoto.title}</h3>
