@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
-import { Instagram, Twitter, Mail, Camera, X, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Instagram, Twitter, Mail, Camera, X, Menu, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
 import { Photo } from './types';
 import BackgroundEffects from './components/BackgroundEffects';
 import { ResponsiveImage } from './components/ResponsiveImage';
@@ -132,8 +132,56 @@ const App: React.FC = () => {
   const [visibleCount, setVisibleCount] = useState(6);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [carouselDirection, setCarouselDirection] = useState(1);
+  const [zoomLevel, setZoomLevel] = useState(1);
   const [formState, setFormState] = useState<'idle' | 'submitting' | 'success'>('idle');
   const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  const filteredPhotos = activeCategory === 'All' 
+    ? PORTFOLIO 
+    : PORTFOLIO.filter(photo => photo.category === activeCategory);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!selectedPhoto) return;
+
+      if (e.key === 'ArrowRight') {
+        const currentIndex = filteredPhotos.findIndex(p => p.id === selectedPhoto.id);
+        const nextIndex = (currentIndex + 1) % filteredPhotos.length;
+        setSelectedPhoto(filteredPhotos[nextIndex]);
+        setZoomLevel(1);
+      } else if (e.key === 'ArrowLeft') {
+        const currentIndex = filteredPhotos.findIndex(p => p.id === selectedPhoto.id);
+        const prevIndex = (currentIndex - 1 + filteredPhotos.length) % filteredPhotos.length;
+        setSelectedPhoto(filteredPhotos[prevIndex]);
+        setZoomLevel(1);
+      } else if (e.key === 'Escape') {
+        setSelectedPhoto(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedPhoto, filteredPhotos]);
+
+  const toggleZoom = () => {
+    setZoomLevel(prev => (prev === 1 ? 2 : 1));
+  };
+
+  const nextPhoto = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const currentIndex = filteredPhotos.findIndex(p => p.id === selectedPhoto?.id);
+    const nextIndex = (currentIndex + 1) % filteredPhotos.length;
+    setSelectedPhoto(filteredPhotos[nextIndex]);
+    setZoomLevel(1);
+  };
+
+  const prevPhoto = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const currentIndex = filteredPhotos.findIndex(p => p.id === selectedPhoto?.id);
+    const prevIndex = (currentIndex - 1 + filteredPhotos.length) % filteredPhotos.length;
+    setSelectedPhoto(filteredPhotos[prevIndex]);
+    setZoomLevel(1);
+  };
 
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -178,10 +226,6 @@ const App: React.FC = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  const filteredPhotos = activeCategory === 'All' 
-    ? PORTFOLIO 
-    : PORTFOLIO.filter(photo => photo.category === activeCategory);
 
   const scrollToSection = (id: string) => {
     setMobileMenuOpen(false);
@@ -685,42 +729,93 @@ const App: React.FC = () => {
             animate={{ opacity: 1, backdropFilter: 'blur(20px)' }}
             exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 md:p-12 cursor-pointer"
-            onClick={() => setSelectedPhoto(null)}
+            className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4 md:p-12 cursor-pointer overflow-hidden"
+            onClick={() => {
+              setSelectedPhoto(null);
+              setZoomLevel(1);
+            }}
           >
-            <motion.button 
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ duration: 0.4, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute top-6 right-6 md:top-10 md:right-10 text-white/50 hover:text-white transition-colors cursor-pointer z-10 p-2"
-              onClick={() => setSelectedPhoto(null)}
+            {/* Top Bar Controls */}
+            <div className="absolute top-0 left-0 right-0 h-20 px-6 md:px-12 flex items-center justify-between z-[70] bg-gradient-to-b from-black/50 to-transparent">
+              <div className="text-white/70 text-sm font-medium hidden md:block">
+                {filteredPhotos.findIndex(p => p.id === selectedPhoto.id) + 1} / {filteredPhotos.length}
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <button
+                  className="p-3 text-white/50 hover:text-white transition-colors bg-white/5 hover:bg-white/10 rounded-full cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleZoom();
+                  }}
+                  title={zoomLevel === 1 ? "Zoom In" : "Zoom Out"}
+                >
+                  {zoomLevel === 1 ? <ZoomIn size={20} /> : <ZoomOut size={20} />}
+                </button>
+                
+                <button 
+                  className="p-3 text-white/50 hover:text-white transition-colors bg-white/5 hover:bg-white/10 rounded-full cursor-pointer"
+                  onClick={() => {
+                    setSelectedPhoto(null);
+                    setZoomLevel(1);
+                  }}
+                  title="Close"
+                >
+                  <X size={24} strokeWidth={1.5} />
+                </button>
+              </div>
+            </div>
+
+            {/* Navigation Arrows */}
+            <button
+              className="absolute left-6 md:left-12 top-1/2 -translate-y-1/2 p-4 text-white/50 hover:text-white bg-white/5 hover:bg-white/10 rounded-full transition-all duration-300 z-[70] hidden sm:flex cursor-pointer"
+              onClick={prevPhoto}
             >
-              <X size={32} strokeWidth={1.5} />
-            </motion.button>
+              <ChevronLeft size={32} strokeWidth={1} />
+            </button>
+
+            <button
+              className="absolute right-6 md:right-12 top-1/2 -translate-y-1/2 p-4 text-white/50 hover:text-white bg-white/5 hover:bg-white/10 rounded-full transition-all duration-300 z-[70] hidden sm:flex cursor-pointer"
+              onClick={nextPhoto}
+            >
+              <ChevronRight size={32} strokeWidth={1} />
+            </button>
             
             <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 10 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.98, opacity: 0, y: 5 }}
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.98, opacity: 0 }}
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.05 }}
-              className="relative max-w-7xl max-h-full w-full h-full flex flex-col items-center justify-center cursor-auto"
+              className={`relative max-w-7xl max-h-full w-full h-full flex flex-col items-center justify-center cursor-default overflow-auto scrollbar-hide py-20`}
               onClick={(e) => e.stopPropagation()}
             >
-              <ResponsiveImage 
-                src={selectedPhoto.url} 
-                alt={selectedPhoto.title} 
-                priority={true}
-                sizes="100vw"
-                className="max-w-full max-h-[85vh] object-contain shadow-2xl"
-                referrerPolicy="no-referrer"
-              />
+              <div className="relative group/image">
+                <motion.div
+                  animate={{ 
+                    scale: zoomLevel,
+                    cursor: zoomLevel === 1 ? 'zoom-in' : 'zoom-out'
+                  }}
+                  transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                  onClick={toggleZoom}
+                  className="flex items-center justify-center"
+                >
+                  <ResponsiveImage 
+                    src={selectedPhoto.url} 
+                    alt={selectedPhoto.title} 
+                    priority={true}
+                    sizes="100vw"
+                    className="max-w-full max-h-[80vh] object-contain shadow-[0_40px_100px_rgba(0,0,0,0.6)] select-none pointer-events-auto"
+                    referrerPolicy="no-referrer"
+                  />
+                </motion.div>
+              </div>
+
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 5 }}
                 transition={{ delay: 0.2, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                className="mt-6 text-center"
+                className={`mt-10 text-center transition-opacity duration-300 ${zoomLevel > 1 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
               >
                 <h3 className="text-white font-serif text-3xl mb-2 tracking-wide">{selectedPhoto.title}</h3>
                 <p className="text-gray-400 text-sm tracking-[0.2em] uppercase font-light">{selectedPhoto.category}</p>
