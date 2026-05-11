@@ -786,18 +786,30 @@ const App: React.FC = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.98, opacity: 0 }}
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.05 }}
-              className={`relative max-w-7xl max-h-full w-full h-full flex flex-col items-center justify-center cursor-default overflow-auto scrollbar-hide py-20`}
+              className={`relative max-w-7xl max-h-full w-full h-full flex flex-col items-center justify-center cursor-default overflow-hidden py-20`}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="relative group/image">
+              <div className="relative group/image w-full h-full flex items-center justify-center">
                 <motion.div
+                  drag={zoomLevel === 1 ? "x" : false}
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.6}
+                  onDragEnd={(_, info) => {
+                    if (zoomLevel !== 1) return;
+                    const swipeThreshold = 100;
+                    if (info.offset.x > swipeThreshold) {
+                      prevPhoto();
+                    } else if (info.offset.x < -swipeThreshold) {
+                      nextPhoto();
+                    }
+                  }}
                   animate={{ 
                     scale: zoomLevel,
                     cursor: zoomLevel === 1 ? 'zoom-in' : 'zoom-out'
                   }}
                   transition={{ type: "spring", damping: 25, stiffness: 200 }}
                   onClick={toggleZoom}
-                  className="flex items-center justify-center"
+                  className="flex items-center justify-center touch-pan-y"
                 >
                   <ResponsiveImage 
                     src={selectedPhoto.url} 
